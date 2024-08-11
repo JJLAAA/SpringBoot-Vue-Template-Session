@@ -2,15 +2,16 @@ package com.example.controller;
 
 import com.example.entity.RestBean;
 import com.example.service.AuthorizeService;
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpSession;
-import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+import javax.validation.constraints.Pattern;
 
 @Validated
 @RestController
@@ -69,6 +70,12 @@ public class AuthorizeController {
         }
     }
 
+    /**
+     * 和上边的是否可以合并
+     * @param password
+     * @param session
+     * @return
+     */
     @PostMapping("/do-reset")
     public RestBean<String> resetPassword(@Length(min = 6, max = 16) @RequestParam("password") String password,
                                           HttpSession session){

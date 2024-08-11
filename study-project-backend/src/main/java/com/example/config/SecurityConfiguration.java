@@ -3,9 +3,6 @@ package com.example.config;
 import com.alibaba.fastjson.JSONObject;
 import com.example.entity.RestBean;
 import com.example.service.AuthorizeService;
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,10 +15,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
 
@@ -29,9 +33,15 @@ import java.io.IOException;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
+    /**
+     * 认证服务，根据用户名查取唯一合法的用户信息，并由AuthenticationManager负责进行Auth比对
+     */
     @Resource
     AuthorizeService authorizeService;
 
+    /**
+     * remember me token存储数据源--MySQL
+     */
     @Resource
     DataSource dataSource;
 
@@ -40,7 +50,7 @@ public class SecurityConfiguration {
                                            PersistentTokenRepository repository) throws Exception {
         return http
                 .authorizeHttpRequests()
-                .requestMatchers("/api/auth/**").permitAll()
+                .antMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
@@ -58,7 +68,9 @@ public class SecurityConfiguration {
                 .tokenValiditySeconds(3600 * 24 * 7)
                 .and()
                 .csrf()
-                .disable()
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .ignoringAntMatchers("/api/auth/login","/api/auth/logout","/api/auth/valid-register-email","/api/auth/register")
+                .and()
                 .cors()
                 .configurationSource(this.corsConfigurationSource())
                 .and()
@@ -95,11 +107,6 @@ public class SecurityConfiguration {
                 .userDetailsService(authorizeService)
                 .and()
                 .build();
-    }
-
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
     }
 
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
